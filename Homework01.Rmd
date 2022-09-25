@@ -1,0 +1,138 @@
+---
+title: "Homework01"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Installing packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(data.table)
+library(lubridate)
+library(dtplyr)
+```
+
+downloading the data files
+```{r}
+epa2004 <- data.table::fread("C:/Users/wyu20/Documents/MPH/R class/PM566-assignments/2004data.csv")
+
+epa2019 <-data.table::fread("C:/Users/wyu20/Documents/MPH/R class/PM566-assignments/2019data.csv")
+```
+
+Checking 2004 data for dimensions, headers, footers, variable names and variable types
+```{r}
+dim(epa2004)
+head(epa2004)
+tail(epa2004)
+str(epa2004)
+colnames(epa2004)
+```
+
+
+Checking 2019 data
+dim, header, footer, variable name, variable type
+```{r}
+dim(epa2019)
+head(epa2019)
+tail(epa2019)
+str(epa2019)
+colnames(epa2019)
+summary(epa2019)
+#this database has mean PM = 7.739, max 120.9, min -2.2, and interquartile range = 9.9-4=5.9. Need to remove negative values here.
+```
+
+Combining the 2 files
+
+```{r}
+#merging 2 SITE_LONGITUDEfiles by adding additional rows
+epatot<-rbind(epa2004, epa2019)
+summary(epatot)
+
+```
+
+Simplifying the variable names 
+```{r}
+epatotal <- rename(epatot,dAQI = DAILY_AQI_VALUE, latitude = SITE_LATITUDE, longitute = , parameter = AQS_PARAMETER_DESC, pm2.5= "Daily Mean PM2.5 Concentration")
+
+```
+Create a basic map in leaflet() that shows the locations of the sites (make sure to use different colors for each year). Summarize the spatial distribution of the monitoring sites.
+
+```{r}
+
+library(leaflet)
+leaflet(epatot) %>% 
+  addProviderTiles('CartoDB.Positron') %>% 
+  addCircles(lat = ~SITE_LATITUDE, lng = ~SITE_LONGITUDE, opacity = 1, fillOpacity = 1, radius = 400)
+
+ ##sites are distributed across california, but most of them are centered around southern california or the bay area.
+```
+
+Check for any missing or implausible values of PM in the combined dataset. Explore the proportions of each and provide a summary of any temporal patterns you see in these observations.
+
+```{r}
+
+summary(epatotal$pm2.5l)
+
+sum(is.na(epatotal$pm2.5))
+
+```
+no missing or implausible values of PM is displayed
+
+
+Explore the main question of interest at three different spatial levels. Create exploratory plots (e.g. boxplots, histograms, line plots) and summary statistics that best suit each level of data. Be sure to write up explanations of what you observe in these data.
+
+```{r}
+library(ggplot2)
+median(epa2004$"Daily Mean PM2.5 Concentration")
+mode(epa2004$"Daily Mean PM2.5 Concentration")
+median(epa2004$"Daily Mean PM2.5 Concentration")
+mode(epa2004$"Daily Mean PM2.5 Concentration")
+
+#histograms of 2004 and 2019 data
+hist(epa2004$"Daily Mean PM2.5 Concentration")
+hist(epa2019$"Daily Mean PM2.5 Concentration")
+##the median is less than the mean for both 2004 and 2019 data.  Mean pm2.5 for 2019 =7.7, which is less than mean pm2.5 for 2004 = 13.12
+
+
+#create mean of pm2.5 by county. However there were some errors encountered.
+
+Mean2.5 <- epatotal[ , ]
+
+dfepatotal<- as.data.frame(epatotal)
+
+> ggplot(data = dfepatotal, mapping = aes(x = "COUNTY", y = "Daily Mean PM2.5 Concentration")) +
+    geom_boxplot()
+
+#creating a boxplot
+ggplot(data = dfepatotal, mapping = aes(x = "COUNTY", y = "Daily Mean PM2.5 Concentration")) +
+    geom_boxplot()
+##unsure results because COUNTY does not separate into individual counties but instead is an aggregate
+
+
+
+```
+
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
