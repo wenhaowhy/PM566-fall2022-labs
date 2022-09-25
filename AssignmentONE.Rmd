@@ -4,7 +4,7 @@ author: "Wy"
 date: "`r Sys.Date()`"
 output: html_document
 ---
- 
+ ,
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -22,7 +22,7 @@ downloading the data files.
 epa2004 <- data.table::fread("C:/Users/wyu20/Documents/MPH/R class/PM566-assignments/2004data.csv")
 
 epa2019 <-data.table::fread("C:/Users/wyu20/Documents/MPH/R class/PM566-assignments/2019data.csv")
-
+#data loaded
 ```
 
 checking 20004 data
