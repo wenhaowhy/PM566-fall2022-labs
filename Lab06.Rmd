@@ -1,0 +1,161 @@
+---
+title: "Lab06"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidytext)
+library(tidyverse)
+library(data.table)
+library(dyplyr)
+library(forcats)
+```
+
+
+Reading file / storing as tibble
+```{r}
+
+download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/00_mtsamples/mtsamples.csv", "mtsamples.csv", method="libcurl", timeout = 60)
+
+mts<-read.csv("mtsamples.csv")
+
+mts <- as_tibble(mts)
+
+mts
+```
+
+
+```{r}
+
+colnames(mts)
+
+specialties <- mts%>% 
+  count(medical_specialty, sort=TRUE)
+
+specialties
+#if just count, there is no sorting, add sort for descending order)
+
+```
+
+Plotting most transcribed records by specialty
+```{r}
+specialties %>% 
+  top_n(10)%>%
+  ggplot( aes(x= n, y = fct_reorder(medical_specialty, n))) + 
+    geom_col()
+
+##graph shows many more surgery transcribed records compared to other specialties
+```
+Part 2 tokenizing words and find most commonly used 
+```{r, cache = TRUE}
+mts %>%
+  unnest_tokens(word, transcription) %>%
+  #anti_join(stop_words, by = c("word")) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20, n) %>%
+  ggplot(aes(n, fct_reorder(word, n))) +
+  geom_col()
+```
+
+
+Part 3 tokenizing words and find most commonly used without stopwords
+```{r, cache = TRUE}
+mts %>% 
+  unnest_tokens(word, transcription) %>%
+  anti_join(stop_words, by=c("word")) %>%
+  filter( !grepl(pattern= "^[0-9]+$", x=word)) %>%
+  count(word, sort=TRUE)%>%
+  top_n(20,n) %>%
+  ggplot( aes(n, fct_reorder(word, n))) + 
+    geom_col()
+    
+```
+
+4 Tokenize into bigrams
+```{r bigrams-transcription, cache = TRUE}
+
+mts %>% 
+  unnest_ngrams(bigram, transcription, n=2) %>%
+  count(bigram, sort=TRUE) %>%
+  top_n(20, n) %>%
+  ggplot(aes(n, fct_reorder(bigram, n)))+ 
+  geom_col()
+
+```
+
+
+```{r triigrams-transcription, cache = TRUE}
+
+mts %>% 
+  unnest_ngrams(tigram, transcription, n=3) %>%
+  count(tigram, sort=TRUE) %>%
+  top_n(20, n) %>%
+  ggplot(aes(n, fct_reorder(tigram, n)))+ 
+  geom_col()
+```
+
+Q5  Pick a word + find word that comes before and after it
+
+```{r}
+ptbigrams <- mts %>% 
+  unnest_ngrams(bigram, transcription, n=2)%>%
+  separate(bigram, into = c("word1", "word2"), sep= " " ) %>%
+  select(word1, word2) %>%
+  filter(word1 == "patient" | word2 == "patient")
+```
+
+finding the words appearing before patient:
+
+```{r}
+
+ptbigrams %>%
+  filter(word2=="patient") %>%
+  count(word1, sort=TRUE) %>%
+  anti_join(stop_words, by = c("word1" = "word")) %>%
+  top_n(5) %>%
+knitr::kable().
+```
+
+Question 6
+Which words are most used in each of the specialties. you can use group_by() and top_n() from dplyr to have the calculations be done within each specialty. Remember to remove stopwords. How about the most 5 used words?
+
+```{r top5 words by specialty, cache= TRUE}
+mts %>%
+  unnest_tokens(word, transcription) %>%
+  group_by(medical_specialty) %>% 
+  count(word, sort = TRUE) %>%
+  filter( !(word %in% stop_words$word) & !grepl(pattern = "^[0-9]+$", x = word)) %>%
+  top_n(5, n) %>%
+  arrange(medical_specialty, desc(n)) %>%
+ knitr::kable()
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
