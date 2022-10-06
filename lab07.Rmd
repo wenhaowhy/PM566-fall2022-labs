@@ -1,0 +1,139 @@
+---
+title: "la07"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(tidytext)
+library(tidyverse)
+library(data.table)
+library(dyplyr)
+library(forcats)
+
+```
+
+
+Reading file / storing as tibble
+```{r}
+
+download.file("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/00_mtsamples/mtsamples.csv", "mtsamples.csv", method="libcurl", timeout = 60)
+
+mts<-read.csv("mtsamples.csv")
+
+mts <- as_tibble(mts)
+
+mts
+```
+
+
+
+```{r}
+library(rvest)
+library(xml2)
+covid<- read_html(
+  x= "https://en.wikipedia.org/wiki/COVID-19_pandemic_death_rates_by_country"
+  
+)
+covid
+```
+
+```{r}
+table <- xml_find_all(covid, xpath = "/html/body/div[3]/div[3]/div[5]/div[1]/div[3]/div[5]/table")
+table <- html_table(table) # This returns a list of tables
+head(table[[1]])
+```
+```{r}
+library(httr)
+go_query <- GET(
+  url   = "http://api.geneontology.org/",
+  path  = "api/bioentity/function/GO:0140374/genes",
+  query = list(
+    evidence          = "ECO:0000006",
+    relationship_type = "involved_in"
+  ), 
+  # May need to pass this option to curl to allow to wait for at least
+  # 60 seconds before returning error.
+  config = config(
+    connecttimeout = 60
+    )
+)
+
+```
+
+Lab 07 
+
+```{r}
+library(rvest)
+library(httr)
+library(tidyverse)
+library(stringr)
+```
+
+Question 1 how many papers are on Sars-cov-2
+```{r}
+# Downloading the website
+website <- xml2::read_html("https://pubmed.ncbi.nlm.nih.gov/?term=sars-cov-2")
+
+# Finding the counts
+counts <- xml2::xml_find_first(website, "/html/body/main/div[9]/div[2]/div[2]/div[1]/span")
+
+# Turning it into text
+counts <- as.character(counts)
+
+# Extracting the data using regex
+stringr::str_extract(counts, "[0-9,]+")
+```
+
+
+
+
+Q2 Academic pubs containing covid19 hawaii
+
+```{r}
+library(httr)
+query_ids <- GET(
+  url  = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+  query = list(
+    db= "pubmed",
+    term = "covid19 hawaii",
+    retmax  = 1000, 
+    rettype = "abstract"
+    )
+
+ids <- httr::content(query_ids)
+```
+
+
+```{r}
+
+
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
