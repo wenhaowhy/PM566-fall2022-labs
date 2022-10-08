@@ -1,0 +1,225 @@
+---
+title: "hw02"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+---
+title: "HW02"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(dtplyr)
+library(lubridate)
+library(tidyverse)
+library(data.table)
+library(knitr)
+library(ggplot2)
+library(leaflet)
+
+```
+
+```{r}
+library(data.table)
+chsi <- read.csv( "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_individual.csv")
+
+chsr <- read.csv("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_regional.csv")
+```
+
+```{r}
+summary(chsi)
+
+head(chsi)
+head(chsr)
+```
+```{r}
+#merging datasets by location
+chsc <- merge(chsi, chsr, by = "townname")
+#chsc <- data.table(chsc) wasn't working
+
+nrow(chsc)
+nrow(chsi)
+nrow(chsr)
+```
+
+1
+```{r}
+#creating new categorical variable 
+
+chsc$obesity_level <- as.factor(ifelse(chsc$bmi < 14, 'underweight',
+                     ifelse(chsc$bmi < 22, 'normal', 
+                     ifelse(chsc$bmi < 24, 'overweight', 'obese'))))
+
+```
+
+2
+```{r}
+#create a summary table that contains the minimum BMI, maximum BMI, and the total number of observations per category.
+sum1 <- chsc %>%
+  select(obesity_level, bmi)
+
+summary(sum1)
+
+```
+
+3
+```{r}
+
+#Create another categorical variable named “smoke_gas_exposure” that summarizes “Second Hand Smoke” and “Gas Stove.” The variable should have four categories in total.
+chsc <- mutate(chsc, smoke_gas_exposure =
+  ifelse(smoke == 1 & gasstove == 1, "both", 
+   ifelse(smoke == 1 & gasstove ==0, "just_smoke", 
+    ifelse(smoke ==0 & gasstove == 1, "just_gas",
+      "neither"))))
+
+table(chsc$smoke_gas_exposure)
+
+#Error in ifelse(smoke == 1 & gasstove == 1, "both", ifelse(smoke == 1 & : object 'smoke' not found
+
+```
+
+4. Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” and asthma indicator by town, sex, obesity level, and “smoke_gas_exposure.”
+```{r}
+
+#mean and stdev of fev by town
+chsc_town <- group_by(chsc, townname)
+
+summarize(chsc_town, mean(fev, na.rm = TRUE),
+          sd(fev, na.rm=TRUE) )
+
+```
+
+
+```{r}
+#mean and stdev of fev by sex
+chsc <- mutate(chsc, sex = ifelse(male == 1,  "male", "female"))
+
+chsc_sex <- group_by(chsc, sex)
+
+summarize(chsc_sex, mean(fev, na.rm = TRUE),
+          sd(fev, na.rm=TRUE) )
+```
+```{r}
+#mean and stdev of fev by obesity level
+
+chsc_obesity_level <- group_by(chsc, obesity_level)
+
+summarize(chsc_obesity_level, mean(fev, na.rm = TRUE),
+          sd(fev, na.rm=TRUE) )
+```
+
+```{r}
+#mean and stdev of fev by smoke exposure
+
+chsc_smoke_gas_exposure <- group_by(chsc, smoke_gas_exposure)
+
+summarize(chsc_smoke_gas_exposure, mean(fev, na.rm = TRUE),
+          sd(fev, na.rm=TRUE) )
+```
+
+
+
+PART 2 EDA
+
+```{r}
+# 1 Facet plot showing scatterplots with regression lines of BMI vs FEV by “townname”.
+
+chsc %>%
+  ggplot(aes(x=bmi,y=fev))  +
+  geom_point(aes(color=townname))+ 
+  geom_smooth(method = lm, se = FALSE) +
+  labs(x= "Body Mass Index", y="FEV")+
+  facet_wrap(~townname)+
+  ggtitle("Scatterplot of BMI vs FEV by “townname”")
+ 
+  #Based on observations of the scatterplots we see that there is a positive relationship between BMI and FEV across different towns, which makes sense as bigger bodies in general have higher lung capacities thus forced expiratory volume.
+```
+
+```{r}
+#Stacked histograms of FEV by BMI category and FEV by smoke/gas exposure. Use different color schemes than the ggplot default.
+
+ggplot(data=chsc, aes(x=fev, fill = smoke_gas_exposure)) + geom_histogram(bins=30)+ scale_fill_brewer() #using a gradient palette
+
+#FEV is normally distributed around 2000 for all groups smoke or gas
+
+ggplot(data=chsc, aes(x=fev, fill = obesity_level)) + geom_histogram(bins=30)+ scale_fill_brewer() #using a gradient palette
+
+#FEV is normally distributed around 2000 for normal, but centers around 1600 for underweight and 2200 for overweight/obese category. This makes sense given the relationship between general body size and lung volume
+
+```
+
+```{r}
+#3 Barchart of BMI by smoke/gas exposure
+
+ggplot(data=chsc, aes(x= smoke_gas_exposure, y=bmi)) +
+  stat_summary(fun.bmi=mean, geom= "bar")+
+  ggtitle("Barchart of BMI by smoke and gas exposure categories")
+
+#average BMI appears consistently under 20 for the 5 groups of smoke vs gas exposure.  BMI appears lowest in the group that was subject to neither smoke or gas.
+```
+
+
+4 Statistical summary graph of bmi with fev
+
+
+ chsc[!is.na(fev)] %>%
+  ggplot(mapping = aes(x = chsc_obesity_level, y = fev)) + 
+    stat_summary(fun.data = mean_sdl, geom = "pointrange") +
+    stat_summary(fun.data = mean_sdl, geom = "errorbar") 
+
+
+4 Statistical summary graph of smoke gas exposure with fev
+
+
+  chsc[!is.na(fev)] %>%
+  ggplot(mapping = aes(x = smoke_gas_exposure, y = fev)) + 
+    stat_summary(fun.data = mean_sdl, geom = "pointrange") +
+    stat_summary(fun.data = mean_sdl, geom = "errorbar") 
+
+function would not run for some reason : object 'fev' not found
+  
+
+```{r}
+#5 A leaflet map showing the concentrations of PM2.5 mass in each of the CHS communities.
+pm25.pal <- colorNumeric(c('yellow','red'), domain=chsc$pm25_mass)
+pal
+
+leaflet(chsc) %>% 
+  addProviderTiles('CartoDB.Positron') %>% 
+  addCircles(
+    lat = ~lat, lng=~lon,
+    opacity = 1, fillOpacity = 1, radius = 500, color = ~pm25.pal(pm25_mass)
+    ) %>%
+  addLegend("bottomright", pal = pal, values = ~pm25_mass,
+    title = "PM2.5 Concentrations Across Multiple Locations",
+    opacity = 1
+  )
+#The leaflet maps show a higher concentration of pm2.5 particles closer to riverside and a lower concentration outside of the LA metropolitan area and closer to the coast. This is likely the result of pollution and trapping of particles within the central basins.
+```
+
+
+
+```{r}
+#6 Choose a visualization to examine whether PM2.5 mass is associated with FEV.
+
+chsc %>%
+  ggplot(aes(x=pm25_mass,y=fev)) +
+  geom_point()+labs(x= "pm2.5 mass", y="FEV")+ geom_smooth() +
+  ggtitle("Associations between PM2.5 mass and FEV")
+
+#unsure about how to insert a regression equation, but based on observation and the regression line alone, there seems to be a negative association between pm2.5 mass and FEV.  The relationship however appears very small. 
+```
+
+
