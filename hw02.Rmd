@@ -44,7 +44,7 @@ nrow(chsi)
 nrow(chsr)
 ```
 
-
+1
 ```{r}
 #creating new categorical variable 
 
@@ -54,7 +54,7 @@ chsc$obesity_level <- as.factor(ifelse(chsc$bmi < 14, 'underweight',
 
 ```
 
-
+2
 ```{r}
 #create a summary table that contains the minimum BMI, maximum BMI, and the total number of observations per category.
 sum1 <- chsc %>%
@@ -64,7 +64,7 @@ summary(sum1)
 
 ```
 
-
+3
 ```{r}
 
 #Create another categorical variable named “smoke_gas_exposure” that summarizes “Second Hand Smoke” and “Gas Stove.” The variable should have four categories in total.
@@ -72,7 +72,7 @@ chsc <- mutate(chsc, smoke_gas_exposure =
   ifelse(smoke == 1 & gasstove == 1, "both", 
    ifelse(smoke == 1 & gasstove ==0, "just_smoke", 
     ifelse(smoke ==0 & gasstove == 1, "just_gas",
-      "none"))))
+      "neither"))))
 
 table(chsc$smoke_gas_exposure)
 
@@ -80,10 +80,9 @@ table(chsc$smoke_gas_exposure)
 
 ```
 
-
+4. Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” and asthma indicator by town, sex, obesity level, and “smoke_gas_exposure.”
 ```{r}
-#Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” and asthma indicator by town, sex, obesity level, and “smoke_gas_exposure.”
-#4 
+
 #mean and stdev of fev by town
 chsc_town <- group_by(chsc, townname)
 
@@ -125,108 +124,92 @@ summarize(chsc_smoke_gas_exposure, mean(fev, na.rm = TRUE),
 PART 2 EDA
 
 ```{r}
-#1 Facet plot showing scatterplots with regression lines of BMI vs FEV by “townname”.
+# 1 Facet plot showing scatterplots with regression lines of BMI vs FEV by “townname”.
 
 chsc %>%
-  ggplot(aes(x=bmi,y=fev)) +
-  geom_point(aes(color=townname)) +
-  labs(x= "Body Mass Index", y="FEV")
-  geom_point() + geom_smooth(method = "lm", se = FALSE)
+  ggplot(aes(x=bmi,y=fev))  +
+  geom_point(aes(color=townname))+ 
+  geom_smooth(method = lm, se = FALSE) +
+  labs(x= "Body Mass Index", y="FEV")+
+  facet_wrap(~townname)+
+  ggtitle("Scatterplot of BMI vs FEV by “townname”")
+ 
+  #Based on observations of the scatterplots we see that there is a positive relationship between BMI and FEV across different towns, which makes sense as bigger bodies in general have higher lung capacities thus forced expiratory volume.
 ```
 
 ```{r}
 #Stacked histograms of FEV by BMI category and FEV by smoke/gas exposure. Use different color schemes than the ggplot default.
 
-ggplot(data=chsc, aes(x=fev, fill = smoke_gas_exposure)) + geom_histogram()+ scale_fill_brewer()  #using a predefined palette
+ggplot(data=chsc, aes(x=fev, fill = smoke_gas_exposure)) + geom_histogram(bins=30)+ scale_fill_brewer() #using a gradient palette
 
-ggplot(data=chsc, aes(x=fev, fill = obesity_level)) + geom_histogram()+ scale_fill_brewer()  #using a predefined palette
+#FEV is normally distributed around 2000 for all groups smoke or gas
+
+ggplot(data=chsc, aes(x=fev, fill = obesity_level)) + geom_histogram(bins=30)+ scale_fill_brewer() #using a gradient palette
+
+#FEV is normally distributed around 2000 for normal, but centers around 1600 for underweight and 2200 for overweight/obese category. This makes sense given the relationship between general body size and lung volume
+
 ```
 
 ```{r}
 #3 Barchart of BMI by smoke/gas exposure
 
 ggplot(data=chsc, aes(x= smoke_gas_exposure, y=bmi)) +
-  stat_summary(fun.bmi=mean, geom= "bar")
+  stat_summary(fun.bmi=mean, geom= "bar")+
+  ggtitle("Barchart of BMI by smoke and gas exposure categories")
 
 #average BMI appears consistently under 20 for the 5 groups of smoke vs gas exposure.  BMI appears lowest in the group that was subject to neither smoke or gas.
 ```
 
 
-```{r}
-#4 Statiscal summary graph of bmi with fev
+4 Statistical summary graph of bmi with fev
+
+
  chsc[!is.na(fev)] %>%
   ggplot(mapping = aes(x = chsc_obesity_level, y = fev)) + 
     stat_summary(fun.data = mean_sdl, geom = "pointrange") +
     stat_summary(fun.data = mean_sdl, geom = "errorbar") 
 
-#4 Statiscal summary graph of smoke gas exposure with fev
-chsc[!is.na(fev)] %>%
+
+4 Statistical summary graph of smoke gas exposure with fev
+
+
+  chsc[!is.na(fev)] %>%
   ggplot(mapping = aes(x = smoke_gas_exposure, y = fev)) + 
     stat_summary(fun.data = mean_sdl, geom = "pointrange") +
     stat_summary(fun.data = mean_sdl, geom = "errorbar") 
-#function would not run for some reason : object 'fev' not found
+
+function would not run for some reason : object 'fev' not found
   
-```
 
-
-
-ggplot(data=chsc, aes(x= smoke_gas_exposure, y=bmi, by=smoke_gas_exposure)) +
-  geom_bar(stat = "identity")AA
 ```{r}
-
 #5 A leaflet map showing the concentrations of PM2.5 mass in each of the CHS communities.
-pm.pal <- colorNumeric(c('darkgreen','goldenrod'), domain=chsc$pm25_mass)
-pm.pal
-  
+pm25.pal <- colorNumeric(c('yellow','red'), domain=chsc$pm25_mass)
+pal
+
 leaflet(chsc) %>% 
   addProviderTiles('CartoDB.Positron') %>% 
   addCircles(
     lat = ~lat, lng=~lon,
-    opacity = 1, fillOpacity = 1, radius = 500, color = ~pm.pal(pm25_mass)
-    )
+    opacity = 1, fillOpacity = 1, radius = 500, color = ~pm25.pal(pm25_mass)
+    ) %>%
+  addLegend("bottomright", pal = pal, values = ~pm25_mass,
+    title = "PM2.5 Concentrations Across Multiple Locations",
+    opacity = 1
+  )
+#The leaflet maps show a higher concentration of pm2.5 particles closer to riverside and a lower concentration outside of the LA metropolitan area and closer to the coast. This is likely the result of pollution and trapping of particles within the central basins.
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 ```{r}
+#6 Choose a visualization to examine whether PM2.5 mass is associated with FEV.
 
-## R Markdown
+chsc %>%
+  ggplot(aes(x=pm25_mass,y=fev)) +
+  geom_point()+labs(x= "pm2.5 mass", y="FEV")+ geom_smooth() +
+  ggtitle("Associations between PM2.5 mass and FEV")
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#unsure about how to insert a regression equation, but based on observation and the regression line alone, there seems to be a negative association between pm2.5 mass and FEV.  The relationship however appears very small. 
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
