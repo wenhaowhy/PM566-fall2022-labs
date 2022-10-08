@@ -1,0 +1,166 @@
+---
+title: "HW02"
+author: "Wy"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(dtplyr)
+library(lubridate)
+library(tidyverse)
+library(data.table)
+
+```
+
+```{r}
+library(data.table)
+chsi <- read.csv( "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_individual.csv")
+
+chsr <- read.csv("https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_regional.csv")
+```
+
+```{r}
+summary(chsi)
+
+head(chsi)
+head(chsr)
+```
+```{r}
+#merging datasets by location
+chsc <- merge(chsi, chsr, by = "townname")
+#chsc <- data.table(chsc) wasn't working
+
+nrow(chsc)
+nrow(chsi)
+nrow(chsr)
+```
+
+
+```{r}
+#creating new categorical variable 
+
+chsc$obesity_level <- as.factor(ifelse(chsc$bmi < 14, 'underweight',
+                     ifelse(chsc$bmi < 22, 'normal', 
+                     ifelse(chsc$bmi < 24, 'overweight', 'obese'))))
+
+```
+
+
+```{r}
+#create a summary table that contains the minimum BMI, maximum BMI, and the total number of observations per category.
+sum1 <- chsc %>%
+  select(obesity_level, bmi)
+
+summary(sum1)
+
+```
+
+
+
+```{r}
+#Create another categorical variable named “smoke_gas_exposure” that summarizes “Second Hand Smoke” and “Gas Stove.” The variable should have four categories in total.
+
+chsc$smoke_gas_exposure <- as.factor(ifelse(smoke == 1 & gasstove == 1, "both", 
+   ifelse(smoke == 1 & gasstove ==0, "just_smoke", 
+    ifelse(smoke ==0 & gasstove == 1, "just_gas",
+      "none"))))
+
+```
+
+
+```{r}
+#Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” and asthma indicator by town, sex, obesity level, and “smoke_gas_exposure.”
+
+
+chsc <- mutate(smoke_gas_exposure =
+  ifelse(smoke == 1 & gasstove == 1, "both", 
+   ifelse(smoke == 1 & gasstove ==0, "just_smoke", 
+    ifelse(smoke ==0 & gasstove == 1, "just_gas",
+      "none"))))
+
+#Error in ifelse(smoke == 1 & gasstove == 1, "both", ifelse(smoke == 1 & : object 'smoke' not found
+
+```
+
+
+```{r}
+
+#another method didn't work
+
+chsc[ , smoke_gas_exposure =
+  ifelse(smoke == 1 & gasstove == 1, "both", 
+   ifelse(smoke == 1 & gasstove ==0, "just_smoke", 
+    ifelse(smoke ==0 & gasstove == 1, "just_gas",
+      "none")))]
+
+#Error in `[.data.frame`(chsc, , smoke_gas_exposure = ifelse(smoke == 1 &  : unused argument (smoke_gas_exposure = ifelse(smoke == 1 & gasstove == 1, "both", ifelse(smoke == 1 & gasstove == 0, "just_smoke", ifelse(smoke == 0 & gasstove == 1, "just_gas", "none"))))
+
+
+#alternative method for #3 also didn't work
+
+chsc$smoke_gas_exposure <- as.factor(fifelse(smoke == 1 & gasstove == 1, "smokandgas", 
+   ifelse(smoke == 1 & gasstove <1, 'smokenogas', 
+    ifelse(smoke < 1 & gasstove == 1, 'gasnosmoke',
+      'none'))))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+ 
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
