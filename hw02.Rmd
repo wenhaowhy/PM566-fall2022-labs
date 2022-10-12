@@ -115,8 +115,10 @@ summarize(chsc_obesity_level, mean(fev, na.rm = TRUE),
 
 chsc_smoke_gas_exposure <- group_by(chsc, smoke_gas_exposure)
 
-summarize(chsc_smoke_gas_exposure, mean(fev, na.rm = TRUE),
-          sd(fev, na.rm=TRUE) )
+summarize(chsc_smoke_gas_exposure, 
+          avg_fev = mean(fev, na.rm = TRUE),
+          sd_fev = sd(fev, na.rm=TRUE),
+          pct_asthma = round(mean(asthma,na.rm=TRUE)*100,1)  )
 ```
 
 
@@ -164,19 +166,22 @@ ggplot(data=chsc, aes(x= smoke_gas_exposure, y=bmi)) +
 4 Statistical summary graph of bmi with fev
 
 
- chsc[!is.na(fev)] %>%
-  ggplot(mapping = aes(x = chsc_obesity_level, y = fev)) + 
+```{r}
+ chsc[!is.na(chsc$fev),] %>%
+  ggplot(mapping = aes(x = obesity_level, y = fev)) + 
     stat_summary(fun.data = mean_sdl, geom = "pointrange") +
     stat_summary(fun.data = mean_sdl, geom = "errorbar") 
+```
 
 
 4 Statistical summary graph of smoke gas exposure with fev
 
-
-  chsc[!is.na(fev)] %>%
+```{r}
+  chsc[!is.na(chsc$fev),] %>%
   ggplot(mapping = aes(x = smoke_gas_exposure, y = fev)) + 
     stat_summary(fun.data = mean_sdl, geom = "pointrange") +
     stat_summary(fun.data = mean_sdl, geom = "errorbar") 
+```
 
 function would not run for some reason : object 'fev' not found
   
@@ -184,7 +189,7 @@ function would not run for some reason : object 'fev' not found
 ```{r}
 #5 A leaflet map showing the concentrations of PM2.5 mass in each of the CHS communities.
 pm25.pal <- colorNumeric(c('yellow','red'), domain=chsc$pm25_mass)
-pal
+
 
 leaflet(chsc) %>% 
   addProviderTiles('CartoDB.Positron') %>% 
@@ -192,14 +197,14 @@ leaflet(chsc) %>%
     lat = ~lat, lng=~lon,
     opacity = 1, fillOpacity = 1, radius = 500, color = ~pm25.pal(pm25_mass)
     ) %>%
-  addLegend("bottomright", pal = pal, values = ~pm25_mass,
-    title = "PM2.5 Concentrations Across Multiple Locations",
+  addLegend("bottomright", pal = pm25.pal, values = ~pm25_mass,
+    title = "PM2.5 Concentrations",
     opacity = 1
   )
-#The leaflet maps show a higher concentration of pm2.5 particles closer to riverside and a lower concentration outside of the LA metropolitan area and closer to the coast. This is likely the result of pollution and trapping of particles within the central basins.
+# Keep the legend title short to not overwrite map
 ```
 
-
+The leaflet maps show a higher concentration of pm2.5 particles closer to riverside and a lower concentration outside of the LA metropolitan area and closer to the coast. This is likely the result of pollution and trapping of particles within the central basins.
 
 ```{r}
 #6 Choose a visualization to examine whether PM2.5 mass is associated with FEV.
